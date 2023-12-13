@@ -1,7 +1,9 @@
 import { publicToken, sceneUUID } from './config.js';
+import * as THREE from 'three';
+
 
 const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
-    userToken : publicToken,
+    userToken: publicToken,
     sceneUUID: sceneUUID,
     joinExisting: true,
 });
@@ -25,12 +27,31 @@ const onClick = async (event) => {
     console.log(entity.getParent().getParent().components.debug_name.value)
 }
 
+function applyTransformation(position, orientation, point) {
+
+    const transformationMatrix = new THREE.Matrix4();
+    const finalTransformationMatrix = transformationMatrix.compose(
+        new THREE.Vector3(...position),
+        new THREE.Quaternion().fromArray(orientation),
+        new THREE.Vector3(1, 1, 1)
+    );
+
+    const toBeTransformed = new THREE.Vector3(...point);
+    let transformedPoint = toBeTransformed.applyMatrix4(finalTransformationMatrix);
+
+    return transformedPoint;
+
+}
+
 let canvas = document.getElementById("display-canvas");
 
-canvas.addEventListener('click', (event) =>onClick(event));
+canvas.addEventListener('click', (event) => onClick(event));
 
 //Set the orbit point as the center of the aabb 
-const rootEntities = await SDK3DVerse.engineAPI.getRootEntities();
+
+let cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
+const initialCameraPosition = applyTransformation(cameraPose.position, cameraPose.orientation, [0, 0, 0]);
+
 let projectEntity = await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject");
 projectEntity = projectEntity[0];
 const localAABB = projectEntity.components.local_aabb;
@@ -43,8 +64,7 @@ const basePoint = applyTransformation(globalTransform.position, globalTransform.
 
 SDK3DVerse.updateControllerSetting(
     {
-        lookAtPoint: basePoint,
-        sensitivity: 0.25,
+        lookAtPoint: [basePoint.x, basePoint.y, basePoint.z],
     });
 
 
@@ -216,7 +236,7 @@ for (let i = 0; i < spaces.length; i++) {
 const spacesInput = createSelectInputSpaces(spacesNames);
 
 // Create Buttons
-const resetButton = createButton('Reset');
+const resetButton = createResetButton('Reset');
 const goToRoomButton = createGoToRoomButton('Go to Room');
 
 // Append elements to the right pane
@@ -293,7 +313,7 @@ function createGoToRoomButton(text) {
     return button;
 }
 
-function createButton(text) {
+function createResetButton(text) {
     const button = document.createElement('button');
     button.textContent = text;
 
@@ -307,7 +327,7 @@ function createButton(text) {
 
         SDK3DVerse.engineAPI.cameraAPI.travel(
             activeViewPort,
-            fromPosition,
+            [initialCameraPosition.x, initialCameraPosition.y, initialCameraPosition.z],
             [0, 0, 0, 1],
             5
         )
@@ -332,46 +352,6 @@ async function roomButtonClick() {
 }
 
 
-function applyTransformation(position, orientation, point) {
-    const [px, py, pz] = position;
-    const [qx, qy, qz, qw] = orientation;
-    const [x, y, z] = point;
-
-    // Calculate rotation matrix from the quaternion
-    const xx = qx * qx;
-    const xy = qx * qy;
-    const xz = qx * qz;
-    const xw = qx * qw;
-
-    const yy = qy * qy;
-    const yz = qy * qz;
-    const yw = qy * qw;
-
-    const zz = qz * qz;
-    const zw = qz * qw;
-
-    const m00 = 1 - 2 * (yy + zz);
-    const m01 = 2 * (xy - zw);
-    const m02 = 2 * (xz + yw);
-
-    const m10 = 2 * (xy + zw);
-    const m11 = 1 - 2 * (xx + zz);
-    const m12 = 2 * (yz - xw);
-
-    const m20 = 2 * (xz - yw);
-    const m21 = 2 * (yz + xw);
-    const m22 = 1 - 2 * (xx + yy);
-
-    // Apply rotation to the point
-    const rotatedPoint = [
-        m00 * x + m01 * y + m02 * z + px,
-        m10 * x + m11 * y + m12 * z + py,
-        m20 * x + m21 * y + m22 * z + pz,
-    ];
-
-    return rotatedPoint;
-}
-
 function getBoundingBoxCenter(min, max) {
     const center = [];
 
@@ -381,6 +361,7 @@ function getBoundingBoxCenter(min, max) {
 
     return center;
 }
+
 
 async function goToRoom(roomUUID) {
 
@@ -402,13 +383,14 @@ async function goToRoom(roomUUID) {
 
     SDK3DVerse.engineAPI.cameraAPI.travel(
         activeViewPort,
-        [aabbCenterGlobal[0] + 0.5, aabbCenterGlobal[1] + 0.5, aabbCenterGlobal[2] + 0.5],
+        [aabbCenterGlobal.x + 0.5, aabbCenterGlobal.y + 0.5, aabbCenterGlobal.z + 0.5],
         [0, 0, 0, 1],
         speed
     )
 
+
     SDK3DVerse.updateControllerSetting(
         {
-            lookAtPoint: aabbCenterGlobal
+            lookAtPoint: [aabbCenterGlobal.x, aabbCenterGlobal.y, aabbCenterGlobal.z]
         });
 }
