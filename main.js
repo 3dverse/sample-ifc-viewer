@@ -210,7 +210,7 @@ function isolate(rowId, isChecked) {
 }
 
 // Create the left pane (table of storeys)
-createTable(tableData);
+// createTable(tableData);
 
 // Create the right pane (spaces filter)
 const rightPane = document.createElement('div');

@@ -1,0 +1,191 @@
+body {
+  top: 0;
+  left: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+}
+
+.canvas-container {
+  width: 100vw;
+  height: 100dvh;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  position: relative;
+
+  padding: 0;
+  margin: 0;
+}
+
+#left-pane,
+#right-pane {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background-color: #ccc;
+  padding: 10px;
+  box-sizing: border-box;
+  z-index: 1;
+  border-collapse: collapse;
+}
+
+#left-pane {
+  left: 0;
+}
+
+#right-pane {
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  gap: 5px;
+}
+
+canvas {
+  flex: 1;
+}
+
+th,
+tr,
+td {
+  border: 2px solid #333;
+}
+
+/* UI starts here */
+
+:root {
+  --story-bg-color: #a4a4a4;
+  --story-bg-color-hover: #b5b5b5;
+  --story-bg-color-active: red;
+
+  --space-bg-color: lightgray;
+  --space-bg-color: #c4c4c4;
+  font-family: 'Open Sans', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+ul {
+  margin: 0;
+}
+
+.side-panel {
+  background-color: white;
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  background-color: #333;
+  color: white;
+  text-align: center;
+}
+
+.panel-body {
+  overflow-y: scroll;
+}
+
+.storeys {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding-left: 0;
+}
+
+.storeys > li {
+  border-bottom: 1px solid black;
+
+  &:last-child {
+    border: none;
+  }
+
+  & header {
+    display: flex;
+    align-items: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    cursor: pointer;
+    background-color: var(--story-bg-color);
+
+    &:hover {
+      background-color: var(--story-bg-color-hover);
+    }
+  }
+}
+
+.toggle-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  padding-right: 3rem;
+}
+
+.storeys > li {
+  & .chevron {
+    background-image: url('https://icongr.am/fontawesome/angle-right.svg?size=16&color=#fff');
+    width: 16px;
+    height: 16px;
+  }
+
+  &.active {
+    & .chevron {
+      background-image: url('https://icongr.am/fontawesome/angle-down.svg?size=16&color=#fff');
+      width: 16px;
+      height: 16px;
+    }
+    & header {
+      background-color: var(--story-bg-color-active);
+    }
+    & .spaces {
+      max-height: none;
+    }
+  }
+
+  & .visibility-icon {
+    background-image: url('https://icongr.am/fontawesome/eye.svg?size=16&color=#fff');
+    width: 16px;
+    height: 16px;
+  }
+
+  &.hidden {
+    & .visibility-icon {
+      background-image: url('https://icongr.am/fontawesome/eye-slash.svg?size=16&color=#fff');
+    }
+  }
+}
+
+.spaces {
+  list-style: none;
+  padding-left: 0;
+  max-height: 0;
+  overflow: hidden;
+
+  & > li {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    background-color: var(--space-bg-color);
+    cursor: pointer;
+    border-bottom: 1px solid var(--space-border);
+
+    &:hover {
+      background-color: var(--space-bg-color-hover);
+    }
+  }
+}
