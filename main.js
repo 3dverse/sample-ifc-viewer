@@ -333,7 +333,7 @@ function createResetButton(text) {
         )
         SDK3DVerse.updateControllerSetting(
             {
-                lookAtPoint: basePoint,
+                lookAtPoint: [basePoint.x, basePoint.y, basePoint.z]
             });
     });
 
