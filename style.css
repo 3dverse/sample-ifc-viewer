@@ -189,3 +189,23 @@ ul {
     }
   }
 }
+
+.reset-button{
+  background-color: #57e117;
+  border: 1px solid #57e117;
+  border-radius: 6px;
+  box-shadow: rgba(0, 0, 0, .1) 0 2px 4px 0;
+  box-sizing: border-box;
+  cursor: pointer;
+ 
+  font-size: 16px;
+  font-weight: 100;
+  outline: none;
+  outline: 0;
+  padding: 10px 25px;
+  text-align: center;
+ 
+  position: absolute;
+  top: 80%;
+  left: 50%;
+}
