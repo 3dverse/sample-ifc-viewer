@@ -79,7 +79,8 @@ for (const storey of storeysEntities) {
     // Visible by default
     // storeyLi.className = "active";
 
-    const storeyHeader = document.createElement('header');
+    const storeyHeader = document.createElement('div');
+    storeyHeader.className = "summary"
 
     //Contains chevron and storey name
     const togglerDiv = document.createElement('div');
@@ -124,6 +125,7 @@ for (const storey of storeysEntities) {
 
         const spaceLi = document.createElement('li');
         spaceLi.innerHTML = "No IfcSpace at this storey";
+        spaceLi.classList = 'empty-storey'
         spacesUl.appendChild(spaceLi);
     }
 
