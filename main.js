@@ -82,7 +82,7 @@ for (const storey of storeysEntities) {
     const storeyHeader = document.createElement('div');
     storeyHeader.className = "summary"
 
-    //Contains chevron and storey name
+    // Contains chevron and storey name
     const togglerDiv = document.createElement('div');
     togglerDiv.className = "toggle-active";
     togglerDiv.addEventListener('click', (event) => changeVisibility(event));
@@ -91,7 +91,8 @@ for (const storey of storeysEntities) {
     chevronDiv.className = "chevron";
 
     const storeyName = document.createElement('h3');
-    storeyName.innerHTML = storey.components.debug_name.value;
+    const name = storey.components.debug_name.value.replace('(IfcBuildingStorey)', '<small>$&</small>');
+    storeyName.innerHTML = name;
 
     const visibilityIcon = document.createElement('div');
     visibilityIcon.className = "visibility-icon";
@@ -118,7 +119,8 @@ for (const storey of storeysEntities) {
             spaceLi.id = spaceRTID2index[spaceEntity.rtid];
             spaceLi.addEventListener('click', (event) => toRoom(event));
 
-            spaceLi.innerHTML = spaceEntity.components.debug_name.value;
+            const spaceName = spaceEntity.components.debug_name.value.replace('(IfcSpace)', '<small>$&</small>');
+            spaceLi.innerHTML = spaceName;
             spacesUl.appendChild(spaceLi);
         }
     } else {

@@ -96,18 +96,7 @@ ul {
         border: none;
     }
   }
-}
 
-.toggle-active {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-grow: 1;
-  padding: 0.5rem .75rem;
-  cursor: pointer;
-}
-
-.storeys > li {
   & .chevron {
     background-image: url('https://icongr.am/fontawesome/angle-right.svg?size=16&color=000000');
     opacity: .5;
@@ -119,6 +108,12 @@ ul {
   h3 {
     font-size: 1rem;
     transition: opacity .2s;
+
+    small {
+        padding-left: .5rem;
+        font-size: .85rem;
+        opacity: .6;
+    }
   }
 
   &.active {
@@ -164,6 +159,15 @@ ul {
 
 }
 
+.toggle-active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  padding: 0.5rem .75rem;
+  cursor: pointer;
+}  
+
 .spaces {
   list-style: none;
   padding: 0;
@@ -177,6 +181,12 @@ ul {
 
     &:hover {
       background-color: transparent;
+    }
+
+    small {
+        padding-left: .5rem;
+        font-size: .85rem;
+        opacity: .6;
     }
 
     &.empty-storey {
