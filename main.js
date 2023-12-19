@@ -204,11 +204,11 @@ function toRoom(event) {
 }
 
 function updateStoreyVisibility(event) {
-    if (event.currentTarget.parentNode.parentNode.className == "hidden") {
-        event.currentTarget.parentNode.parentNode.className = "";
+    if (event.currentTarget.parentNode.parentNode.classList.contains("hidden")) {
+        event.currentTarget.parentNode.parentNode.classList.remove("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(true);
     } else {
-        event.currentTarget.parentNode.parentNode.className = "hidden";
+        event.currentTarget.parentNode.parentNode.classList.add("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(false);
     }
 
