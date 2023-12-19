@@ -215,5 +215,23 @@ ul {
   position: absolute;
   top: 80%;
   left: 50%;
-  transform: translate(-50%, 0);
+  transform: translateX(-50%);
+}
+
+@media (max-width: 35em) {
+    .side-panel {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        max-height: 50vh;
+    }
+
+    .reset-button{
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        transform: none;
+    }
 }
