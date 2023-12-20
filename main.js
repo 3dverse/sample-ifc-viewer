@@ -2,141 +2,150 @@ import { publicToken, sceneUUID } from './config.js';
 import * as THREE from 'three';
 
 // Time (s) to get to a new point with the travel function
-const timeToTravel = 3;
-await setUp3dverse();
-setUpClickableElement();
+const TIME_TO_TRAVEL = 3;
 
-// Set the orbit point as the center of the IfcProject aabb
-const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
-const initialCameraPosition = applyTransformation(cameraPose.position, cameraPose.orientation, [0, 0, 0]);
-
-const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
-
-const localAABB = projectEntity.components.local_aabb;
-
-const globalTransform = projectEntity.getGlobalTransform();
-
-const localAABBCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
-
-const basePoint = applyTransformation(globalTransform.position, globalTransform.orientation, localAABBCenter);
-
-SDK3DVerse.updateControllerSetting(
-    {
-        lookAtPoint: [basePoint.x, basePoint.y, basePoint.z],
-    });
-
-setUpResetButton();
-
-// Get the storeys container entity
-const storeys = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcBuildingStorey"))[0];
-
+// For further access to IFC entities
 let storeysEntities = [];
+let storeyRTID2index = {};
 let storey2Spaces = {};
-
 let allSpaces = [];
 let spaceRTID2index = {};
 
-let storeyRTID2index = {};
+// Base point setup
+let initialCameraPosition;
+let basePoint;
 
-const storeychildren = await storeys.getChildren();
+await startSession();
+await setupViewer();
+setupClickableElement();
 
-for (const storeyEntity of storeychildren) {
-    storeysEntities.push(storeyEntity);
 
-    storey2Spaces[storeyEntity.components.debug_name.value] = null;
+async function setupViewer() {
+    // Set the orbit point as the center of the IfcProject aabb
+    const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
+    initialCameraPosition = applyTransformation(cameraPose.position, cameraPose.orientation, [0, 0, 0]);
 
-    const childClassEntities = await storeyEntity.getChildren();
+    const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
 
-    for (const childClassEntity of childClassEntities) {
-        if (childClassEntity.components.debug_name.value == "IfcSpace") {
-            storey2Spaces[storeyEntity.components.debug_name.value] = childClassEntity;
+    const localAABB = projectEntity.components.local_aabb;
 
-            const spacesEntities = (await childClassEntity.getChildren());
+    const globalTransform = projectEntity.getGlobalTransform();
 
-            for (const spaceEntity of spacesEntities) {
-                allSpaces.push(spaceEntity);
-                spaceRTID2index[spaceEntity.rtid] = allSpaces.length - 1;
+    const localAABBCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
+
+    basePoint = applyTransformation(globalTransform.position, globalTransform.orientation, localAABBCenter);
+
+    SDK3DVerse.updateControllerSetting(
+        {
+            lookAtPoint: [basePoint.x, basePoint.y, basePoint.z],
+        });
+
+    setupResetButton();
+
+    // Get the storeys container entity
+    const storeys = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcBuildingStorey"))[0];
+
+    const storeychildren = await storeys.getChildren();
+
+    for (const storeyEntity of storeychildren) {
+        storeysEntities.push(storeyEntity);
+
+        storey2Spaces[storeyEntity.components.debug_name.value] = null;
+
+        const childClassEntities = await storeyEntity.getChildren();
+
+        for (const childClassEntity of childClassEntities) {
+            if (childClassEntity.components.debug_name.value == "IfcSpace") {
+                storey2Spaces[storeyEntity.components.debug_name.value] = childClassEntity;
+
+                const spacesEntities = (await childClassEntity.getChildren());
+
+                for (const spaceEntity of spacesEntities) {
+                    allSpaces.push(spaceEntity);
+                    spaceRTID2index[spaceEntity.rtid] = allSpaces.length - 1;
+                }
             }
         }
     }
-}
 
-// Sort the storeys by alphabetical order
-storeysEntities = storeysEntities.sort((a, b) => a.components.debug_name.value.localeCompare(b.components.debug_name.value));
+    // Sort the storeys by alphabetical order
+    storeysEntities = storeysEntities.sort((a, b) => a.components.debug_name.value.localeCompare(b.components.debug_name.value));
 
-for (let i = 0; i < storeysEntities.length; i++) {
-    storeyRTID2index[storeysEntities[i].rtid] = i;
-}
-
-const storeysUl = document.getElementsByClassName("storeys")[0];
-
-for (const storey of storeysEntities) {
-
-    const storeyLi = document.createElement('li');
-
-    storeyLi.id = storeyRTID2index[storey.rtid];
-
-    // Visible by default
-    // storeyLi.className = "active";
-
-    const storeyHeader = document.createElement('header');
-
-    //Contains chevron and storey name
-    const togglerDiv = document.createElement('div');
-    togglerDiv.className = "toggle-active";
-    togglerDiv.addEventListener('click', (event) => changeVisibility(event));
-
-    const chevronDiv = document.createElement('div');
-    chevronDiv.className = "chevron";
-
-    const storeyName = document.createElement('h3');
-    storeyName.innerHTML = storey.components.debug_name.value;
-
-    const visibilityIcon = document.createElement('div');
-    visibilityIcon.className = "visibility-icon";
-    visibilityIcon.addEventListener('click', (event) => updateStoreyVisibility(event));
-
-    togglerDiv.appendChild(chevronDiv);
-    togglerDiv.appendChild(storeyName);
-    storeyHeader.appendChild(togglerDiv);
-    storeyHeader.appendChild(visibilityIcon);
-    storeyLi.appendChild(storeyHeader);
-    storeysUl.appendChild(storeyLi);
-
-    const spacesDiv = document.createElement('div');
-    const spacesUl = document.createElement('ul');
-    spacesUl.className = "spaces";
-
-    const spacesEntity = storey2Spaces[storey.components.debug_name.value];
-
-    if (spacesEntity) {
-        const spacesEntities = await spacesEntity.getChildren();
-
-        for (const spaceEntity of spacesEntities) {
-            const spaceLi = document.createElement('li');
-            spaceLi.id = spaceRTID2index[spaceEntity.rtid];
-            spaceLi.addEventListener('click', (event) => toRoom(event));
-
-            spaceLi.innerHTML = spaceEntity.components.debug_name.value;
-            spacesUl.appendChild(spaceLi);
-        }
-    } else {
-
-        const spaceLi = document.createElement('li');
-        spaceLi.innerHTML = "No IfcSpace at this storey";
-        spacesUl.appendChild(spaceLi);
+    for (let i = 0; i < storeysEntities.length; i++) {
+        storeyRTID2index[storeysEntities[i].rtid] = i;
     }
 
-    spacesDiv.appendChild(spacesUl);
-    storeyLi.appendChild(spacesDiv);
+    const storeysUl = document.getElementsByClassName("storeys")[0];
+
+    for (const storey of storeysEntities) {
+
+        const storeyLi = document.createElement('li');
+
+        storeyLi.id = storeyRTID2index[storey.rtid];
+
+        // Visible by default
+        // storeyLi.className = "active";
+
+        const storeyHeader = document.createElement('header');
+
+        //Contains chevron and storey name
+        const togglerDiv = document.createElement('div');
+        togglerDiv.className = "toggle-active";
+        togglerDiv.addEventListener('click', (event) => changeVisibility(event));
+
+        const chevronDiv = document.createElement('div');
+        chevronDiv.className = "chevron";
+
+        const storeyName = document.createElement('h3');
+        storeyName.innerHTML = storey.components.debug_name.value;
+
+        const visibilityIcon = document.createElement('div');
+        visibilityIcon.className = "visibility-icon";
+        visibilityIcon.addEventListener('click', (event) => updateStoreyVisibility(event));
+
+        togglerDiv.appendChild(chevronDiv);
+        togglerDiv.appendChild(storeyName);
+        storeyHeader.appendChild(togglerDiv);
+        storeyHeader.appendChild(visibilityIcon);
+        storeyLi.appendChild(storeyHeader);
+        storeysUl.appendChild(storeyLi);
+
+        const spacesDiv = document.createElement('div');
+        const spacesUl = document.createElement('ul');
+        spacesUl.className = "spaces";
+
+        const spacesEntity = storey2Spaces[storey.components.debug_name.value];
+
+        if (spacesEntity) {
+            const spacesEntities = await spacesEntity.getChildren();
+
+            for (const spaceEntity of spacesEntities) {
+                const spaceLi = document.createElement('li');
+                spaceLi.id = spaceRTID2index[spaceEntity.rtid];
+                spaceLi.addEventListener('click', (event) => toRoom(event));
+
+                spaceLi.innerHTML = spaceEntity.components.debug_name.value;
+                spacesUl.appendChild(spaceLi);
+            }
+        } else {
+
+            const spaceLi = document.createElement('li');
+            spaceLi.innerHTML = "No IfcSpace at this storey";
+            spacesUl.appendChild(spaceLi);
+        }
+
+        spacesDiv.appendChild(spacesUl);
+        storeyLi.appendChild(spacesDiv);
+    }
 }
 
-function setUpClickableElement() {
+
+function setupClickableElement() {
     const canvas = document.getElementById("display-canvas");
     canvas.addEventListener('click', (event) => onClick(event));
 }
 
-async function setUp3dverse() {
+async function startSession() {
     const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
         userToken: publicToken,
         sceneUUID: sceneUUID,
@@ -212,7 +221,7 @@ function updateStoreyVisibility(event) {
 
 }
 
-function setUpResetButton() {
+function setupResetButton() {
     const button = document.getElementsByClassName("reset-button")[0];
 
     button.addEventListener('click', () => {
@@ -226,7 +235,7 @@ function setUpResetButton() {
         const departurePosition = new THREE.Vector3(fromPosition[0], fromPosition[1], fromPosition[2]);
         const distance = computeDistance(departurePosition, initialCameraPosition);
 
-        const speed = distance / (timeToTravel);
+        const speed = distance / (TIME_TO_TRAVEL);
 
         SDK3DVerse.engineAPI.cameraAPI.travel(
             activeViewPort,
@@ -270,7 +279,7 @@ async function goToRoom(roomUUID) {
     const departurePosition = new THREE.Vector3(fromPosition[0], fromPosition[1], fromPosition[2]);
     const distance = computeDistance(departurePosition, aabbCenterGlobal);
 
-    const speed = distance / (timeToTravel);
+    const speed = distance / (TIME_TO_TRAVEL);
 
     SDK3DVerse.engineAPI.cameraAPI.travel(
         activeViewPort,
