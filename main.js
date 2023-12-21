@@ -11,6 +11,8 @@ let storey2Spaces = {};
 let allSpaces = [];
 let spaceRTID2index = {};
 
+let storeysVisibility = [];
+
 // Base point setup
 let initialCameraPosition;
 let basePoint;
@@ -70,9 +72,10 @@ async function setupViewer() {
 
     // Sort the storeys by alphabetical order
     storeysEntities = storeysEntities.sort((a, b) => a.components.debug_name.value.localeCompare(b.components.debug_name.value));
-
+   
     for (let i = 0; i < storeysEntities.length; i++) {
         storeyRTID2index[storeysEntities[i].rtid] = i;
+        storeysVisibility[i] = true;
     }
 
     const storeysUl = document.getElementsByClassName("storeys")[0];
@@ -105,10 +108,15 @@ async function setupViewer() {
         visibilityIcon.className = "visibility-icon";
         visibilityIcon.addEventListener('click', (event) => updateStoreyVisibility(event));
 
+        const isolationIcon = document.createElement('div');
+        isolationIcon.className = "isolation-icon";
+        isolationIcon.addEventListener('click', (event) => isolate(event));
+
         togglerDiv.appendChild(chevronDiv);
         togglerDiv.appendChild(storeyName);
         storeyHeader.appendChild(togglerDiv);
         storeyHeader.appendChild(visibilityIcon);
+        storeyHeader.appendChild(isolationIcon);
         storeyLi.appendChild(storeyHeader);
         storeysUl.appendChild(storeyLi);
 
@@ -218,11 +226,54 @@ function updateStoreyVisibility(event) {
     if (event.currentTarget.parentNode.parentNode.classList.contains("hidden")) {
         event.currentTarget.parentNode.parentNode.classList.remove("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(true);
+        storeysVisibility[event.currentTarget.parentNode.parentNode.id] = true;
     } else {
         event.currentTarget.parentNode.parentNode.classList.add("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(false);
+        storeysVisibility[event.currentTarget.parentNode.parentNode.id] = false;
     }
+}
 
+function updateVisibility() {
+    for (let i = 0; i < storeysVisibility.length; i++) {
+        if (storeysVisibility[i]) {
+            storeysEntities[i].setVisibility(true)
+        }
+        else {
+            storeysEntities[i].setVisibility(false)
+        }
+    }
+}
+
+function isolate(event) {
+    const isIsolated = event.currentTarget.parentNode.parentNode.classList.contains("isolated");
+    if (isIsolated) {
+        // Un-isolate
+        event.currentTarget.parentNode.parentNode.classList.remove("isolated");
+        for (let i = 0; i < storeysEntities.length; i++) {
+            storeysEntities[i].setVisibility(storeysVisibility[i]);
+        }
+
+        updateVisibility();
+
+    } else {
+        const isolatedElements = document.getElementsByClassName("isolated");
+        //Only one storey can be isolated
+        for (let i = 0; i < isolatedElements.length; i++) {
+            isolatedElements[i].classList.remove("isolated");
+        }
+   
+        event.currentTarget.parentNode.parentNode.classList.add("isolated");
+        for (let i = 0; i < storeysEntities.length; i++) {
+            if (parseInt(event.currentTarget.parentNode.parentNode.id) == i) {
+                storeysEntities[i].setVisibility(true);
+
+            }
+            else {
+                storeysEntities[i].setVisibility(false);
+            }
+        }
+    }
 }
 
 function setupResetButton() {
