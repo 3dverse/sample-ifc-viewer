@@ -86,9 +86,10 @@ async function setupViewer() {
         // Visible by default
         // storeyLi.className = "active";
 
-        const storeyHeader = document.createElement('header');
+        const storeyHeader = document.createElement('div');
+        storeyHeader.className = "summary"
 
-        //Contains chevron and storey name
+        // Contains chevron and storey name
         const togglerDiv = document.createElement('div');
         togglerDiv.className = "toggle-active";
         togglerDiv.addEventListener('click', (event) => changeVisibility(event));
@@ -97,7 +98,8 @@ async function setupViewer() {
         chevronDiv.className = "chevron";
 
         const storeyName = document.createElement('h3');
-        storeyName.innerHTML = storey.components.debug_name.value;
+        const name = storey.components.debug_name.value.replace('(IfcBuildingStorey)', '<small>$&</small>');
+        storeyName.innerHTML = name;
 
         const visibilityIcon = document.createElement('div');
         visibilityIcon.className = "visibility-icon";
@@ -124,13 +126,15 @@ async function setupViewer() {
                 spaceLi.id = spaceRTID2index[spaceEntity.rtid];
                 spaceLi.addEventListener('click', (event) => toRoom(event));
 
-                spaceLi.innerHTML = spaceEntity.components.debug_name.value;
+                const spaceName = spaceEntity.components.debug_name.value.replace('(IfcSpace)', '<small>$&</small>');
+                spaceLi.innerHTML = spaceName;
                 spacesUl.appendChild(spaceLi);
             }
         } else {
 
             const spaceLi = document.createElement('li');
             spaceLi.innerHTML = "No IfcSpace at this storey";
+            spaceLi.classList = 'empty-storey'
             spacesUl.appendChild(spaceLi);
         }
 
@@ -211,11 +215,11 @@ function toRoom(event) {
 }
 
 function updateStoreyVisibility(event) {
-    if (event.currentTarget.parentNode.parentNode.className == "hidden") {
-        event.currentTarget.parentNode.parentNode.className = "";
+    if (event.currentTarget.parentNode.parentNode.classList.contains("hidden")) {
+        event.currentTarget.parentNode.parentNode.classList.remove("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(true);
     } else {
-        event.currentTarget.parentNode.parentNode.className = "hidden";
+        event.currentTarget.parentNode.parentNode.classList.add("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(false);
     }
 
