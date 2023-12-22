@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
-export const publicToken = 'public_GVrbLfEBNInJAHAc';
+export const publicToken = "public_GVrbLfEBNInJAHAc";
 //------------------------------------------------------------------------------
-export const sceneUUID = '7a39c769-f753-4ab1-8402-161b65ed0dd1';
+export const sceneUUID = "7a39c769-f753-4ab1-8402-161b65ed0dd1";
 
 // sceneUUID: "7a39c769-f753-4ab1-8402-161b65ed0dd1"
 // sceneUUID: "9ef0b68d-b72a-4483-8374-94c508e5d1b0"

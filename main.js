@@ -29,17 +29,14 @@ async function setupViewer() {
 async function setupBasePoint() {
     // Set the orbit point as the center of the IfcProject aabb
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
-    initialCameraPosition = applyTransformation(cameraPose.position, cameraPose.orientation, [0, 0, 0]);
-
+    initialCameraPosition = new THREE.Vector3(cameraPose.position[0], cameraPose.position[1], cameraPose.position[2]);
+ 
     const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
 
     const localAABB = projectEntity.components.local_aabb;
-
-    const globalTransform = projectEntity.getGlobalTransform();
-
     const localAABBCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
-
-    basePoint = applyTransformation(globalTransform.position, globalTransform.orientation, localAABBCenter);
+  
+    basePoint = applyTransformation(projectEntity.getGlobalMatrix(), localAABBCenter);
 
     SDK3DVerse.updateControllerSetting({
         lookAtPoint: [basePoint.x, basePoint.y, basePoint.z],
@@ -188,16 +185,12 @@ function computeDistance(u, v) {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-function applyTransformation(position, orientation, point) {
+function applyTransformation(globalMatrix, point) {
     const transformationMatrix = new THREE.Matrix4();
-    const finalTransformationMatrix = transformationMatrix.compose(
-        new THREE.Vector3(...position),
-        new THREE.Quaternion().fromArray(orientation),
-        new THREE.Vector3(1, 1, 1),
-    );
+    transformationMatrix.fromArray(globalMatrix);
 
     const toBeTransformed = new THREE.Vector3(...point);
-    let transformedPoint = toBeTransformed.applyMatrix4(finalTransformationMatrix);
+    let transformedPoint = toBeTransformed.applyMatrix4(transformationMatrix);
 
     return transformedPoint;
 }
@@ -231,8 +224,7 @@ function resetInitialView() {
 
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     const fromPosition = cameraPose.position;
-    const fromOrientation = cameraPose.orientation;
-
+    
     const departurePosition = new THREE.Vector3(fromPosition[0], fromPosition[1], fromPosition[2]);
     const distance = computeDistance(departurePosition, initialCameraPosition);
 
@@ -258,7 +250,7 @@ function setupResetButton() {
 function getBoundingBoxCenter(min, max) {
     const center = [];
 
-    for (let i = 0; i < min.length; i++) {
+    for (let i = 0; i < 3; i++) {
         center[i] = (min[i] + max[i]) / 2;
     }
 
@@ -268,16 +260,15 @@ function getBoundingBoxCenter(min, max) {
 async function goToRoom(roomUUID) {
     const spaceEntity = (await SDK3DVerse.engineAPI.findEntitiesByEUID(roomUUID))[0];
 
-    const globalTransform = spaceEntity.getGlobalTransform();
     const localAABB = spaceEntity.components.local_aabb;
     const activeViewPort = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0];
 
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     const fromPosition = cameraPose.position;
-    const fromOrientation = cameraPose.orientation;
-
+    
     const aabbCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
-    const aabbCenterGlobal = applyTransformation(globalTransform.position, globalTransform.orientation, aabbCenter);
+
+    const aabbCenterGlobal = applyTransformation(spaceEntity.getGlobalMatrix(), aabbCenter);
 
     const departurePosition = new THREE.Vector3(fromPosition[0], fromPosition[1], fromPosition[2]);
     const distance = computeDistance(departurePosition, aabbCenterGlobal);

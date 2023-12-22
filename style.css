@@ -81,19 +81,19 @@ ul {
   padding-left: 0;
 }
 
-.storeys > li {
+.storeys>li {
   border-bottom: 1px solid lightgray;
 
   .summary {
     display: flex;
     align-items: center;
-    
+
     &:hover {
-        background-color: white;
+      background-color: white;
     }
 
     &:last-child {
-        border: none;
+      border: none;
     }
   }
 
@@ -110,9 +110,9 @@ ul {
     transition: opacity .2s;
 
     small {
-        padding-left: .5rem;
-        font-size: .85rem;
-        opacity: .6;
+      padding-left: .5rem;
+      font-size: .85rem;
+      opacity: .6;
     }
   }
 
@@ -137,14 +137,14 @@ ul {
     cursor: pointer;
 
     &:hover {
-        opacity: 1;
+      opacity: 1;
     }
   }
 
   &.hidden {
 
     h3 {
-        opacity: .6;
+      opacity: .6;
     }
 
     & .visibility-icon {
@@ -166,7 +166,7 @@ ul {
   flex-grow: 1;
   padding: 0.5rem .75rem;
   cursor: pointer;
-}  
+}
 
 .spaces {
   list-style: none;
@@ -174,7 +174,7 @@ ul {
   max-height: 0;
   overflow: hidden;
 
-  & > li {
+  &>li {
     padding: .5rem 1rem .5rem 3rem;
     background-color: white;
     cursor: pointer;
@@ -184,26 +184,26 @@ ul {
     }
 
     small {
-        padding-left: .5rem;
-        font-size: .85rem;
-        opacity: .6;
+      padding-left: .5rem;
+      font-size: .85rem;
+      opacity: .6;
     }
 
     &.empty-storey {
-        color: dimgray;
-        font-size: .85rem;
+      color: dimgray;
+      font-size: .85rem;
     }
   }
 }
 
-.reset-button{
+.reset-button {
   background-color: white;
   border: none;
   border-radius: 10rem;
   box-shadow: 0 5px 25px rgb(0 0 0 / 0.15);
   box-sizing: border-box;
   cursor: pointer;
- 
+
   font-size: 1rem;
   letter-spacing: 0.025em;
   font-weight: 100;
@@ -211,7 +211,7 @@ ul {
   outline: 0;
   padding: .75rem 1.5rem;
   text-align: center;
- 
+
   position: absolute;
   top: 80%;
   left: 50%;
@@ -219,19 +219,19 @@ ul {
 }
 
 @media (max-width: 35em) {
-    .side-panel {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        width: 100vw;
-        max-height: 50vh;
-    }
+  .side-panel {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    max-height: 50vh;
+  }
 
-    .reset-button{
-        position: fixed;
-        top: 1rem;
-        left: 1rem;
-        transform: none;
-    }
+  .reset-button {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    transform: none;
+  }
 }
