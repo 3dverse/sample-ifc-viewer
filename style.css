@@ -48,7 +48,7 @@ ul {
   left: 1.5rem;
   top: 1.5rem;
   max-height: calc(100vh - 3rem);
-  width: 20rem;
+  width: 27rem;
   display: flex;
   flex-direction: column;
   border-radius: 8px;
@@ -108,6 +108,9 @@ ul {
   h3 {
     font-size: 1rem;
     transition: opacity .2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     small {
       padding-left: .5rem;
@@ -166,6 +169,7 @@ ul {
   flex-grow: 1;
   padding: 0.5rem .75rem;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .spaces {
