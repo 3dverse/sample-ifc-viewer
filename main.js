@@ -4,9 +4,9 @@ import * as THREE from "three";
 // Time (s) to get to a new point with the travel function
 const TIME_TO_TRAVEL = 3;
 
-initApp();
+window.addEventListener("load", InitApp);
 
-async function initApp() {
+async function InitApp() {
     await startSession();
     const data = await initSceneData();
     await setupHtmlLayout(data);
