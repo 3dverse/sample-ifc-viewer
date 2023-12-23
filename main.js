@@ -4,46 +4,162 @@ import * as THREE from "three";
 // Time (s) to get to a new point with the travel function
 const TIME_TO_TRAVEL = 3;
 
-// For further access to IFC entities
-let storeysEntities = [];
-let storeyRTID2index = {};
-let storey2Spaces = {};
-let allSpaces = [];
-let spaceRTID2index = {};
+initApp();
 
-// Base point setup
-let initialCameraPosition;
-let basePoint;
-
-await startSession();
-await setupBasePoint();
-await setupViewer();
-getIfcTypeOnClickOnCanvas();
-await buildHtmlLayout();
-
-async function setupViewer() {
-    setupResetButton();
-    await parseStoreysAndSpacesEntities();
+async function initApp() {
+    await startSession();
+    const data = await initSceneData();
+    await setupHtmlLayout(data);
+    setupCanvasEvents();
 }
 
-async function setupBasePoint() {
+async function startSession() {
+    const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
+        userToken: publicToken,
+        sceneUUID: sceneUUID,
+        joinExisting: true,
+    });
+
+    await SDK3DVerse.start({
+        sessionConnectionInfo,
+        canvas: document.getElementById("display-canvas"),
+        viewportProperties: {
+            defaultControllerType: SDK3DVerse.controller_type.orbit,
+        },
+        maxDimension: 1920,
+    });
+}
+
+async function initSceneData() {
+    const { initialCameraPosition, basePoint } = await setupOrbitPoint();
+    const { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index } =
+        await parseStoreysAndSpacesEntities();
+    return {
+        initialCameraPosition,
+        basePoint,
+        storeysEntities,
+        storeyRTID2index,
+        storey2Spaces,
+        allSpaces,
+        spaceRTID2index,
+    };
+}
+
+async function setupHtmlLayout(data) {
+    const {
+        initialCameraPosition,
+        basePoint,
+        storeysEntities,
+        storeyRTID2index,
+        storey2Spaces,
+        allSpaces,
+        spaceRTID2index,
+    } = data;
+
+    const storeysUl = document.getElementsByClassName("storeys")[0];
+
+    for (const storey of storeysEntities) {
+        const storeyLi = document.createElement("li");
+
+        storeyLi.id = storeyRTID2index[storey.rtid];
+
+        // Visible by default
+        // storeyLi.className = "active";
+
+        const storeyHeader = document.createElement("div");
+        storeyHeader.className = "summary";
+
+        // Contains chevron and storey name
+        const togglerDiv = document.createElement("div");
+        togglerDiv.className = "toggle-active";
+        togglerDiv.addEventListener("click", (event) => changeVisibility(event, storeysEntities));
+
+        const chevronDiv = document.createElement("div");
+        chevronDiv.className = "chevron";
+
+        const storeyName = document.createElement("h3");
+        const name = storey.components.debug_name.value.replace("(IfcBuildingStorey)", "<small>$&</small>");
+        storeyName.innerHTML = name;
+
+        const visibilityIcon = document.createElement("div");
+        visibilityIcon.className = "visibility-icon";
+        visibilityIcon.addEventListener("click", (event) => updateStoreyVisibility(event, storeysEntities));
+
+        togglerDiv.appendChild(chevronDiv);
+        togglerDiv.appendChild(storeyName);
+        storeyHeader.appendChild(togglerDiv);
+        storeyHeader.appendChild(visibilityIcon);
+        storeyLi.appendChild(storeyHeader);
+        storeysUl.appendChild(storeyLi);
+
+        const spacesDiv = document.createElement("div");
+        const spacesUl = document.createElement("ul");
+        spacesUl.className = "spaces";
+
+        const spacesEntity = storey2Spaces[storey.components.debug_name.value];
+
+        if (spacesEntity) {
+            const spacesEntities = await spacesEntity.getChildren();
+
+            for (const spaceEntity of spacesEntities) {
+                const spaceLi = document.createElement("li");
+                spaceLi.id = spaceRTID2index[spaceEntity.rtid];
+                spaceLi.addEventListener("click", (event) =>
+                    toRoom(event, allSpaces, initialCameraPosition, basePoint),
+                );
+
+                const spaceName = spaceEntity.components.debug_name.value.replace("(IfcSpace)", "<small>$&</small>");
+                spaceLi.innerHTML = spaceName;
+                spacesUl.appendChild(spaceLi);
+            }
+        } else {
+            const spaceLi = document.createElement("li");
+            spaceLi.innerHTML = "No IfcSpace at this storey";
+            spaceLi.classList = "empty-storey";
+            spacesUl.appendChild(spaceLi);
+        }
+
+        spacesDiv.appendChild(spacesUl);
+        storeyLi.appendChild(spacesDiv);
+    }
+
+    setupResetButton(initialCameraPosition, basePoint);
+}
+
+function setupCanvasEvents() {
+    getIfcTypeOnClickOnCanvas();
+}
+
+async function setupOrbitPoint() {
     // Set the orbit point as the center of the IfcProject aabb
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
-    initialCameraPosition = new THREE.Vector3(cameraPose.position[0], cameraPose.position[1], cameraPose.position[2]);
- 
+    const initialCameraPosition = new THREE.Vector3(
+        cameraPose.position[0],
+        cameraPose.position[1],
+        cameraPose.position[2],
+    );
+
     const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
 
     const localAABB = projectEntity.components.local_aabb;
     const localAABBCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
-  
-    basePoint = applyTransformation(projectEntity.getGlobalMatrix(), localAABBCenter);
+
+    const basePoint = applyTransformation(projectEntity.getGlobalMatrix(), localAABBCenter);
 
     SDK3DVerse.updateControllerSetting({
         lookAtPoint: [basePoint.x, basePoint.y, basePoint.z],
     });
+
+    return { initialCameraPosition, basePoint };
 }
 
 async function parseStoreysAndSpacesEntities() {
+    let storeysEntities = [];
+    let storeyRTID2index = {};
+    let storey2Spaces = {};
+    let allSpaces = [];
+    let spaceRTID2index = {};
+
     // Get the storeys container entity
     const storeys = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcBuildingStorey"))[0];
 
@@ -78,95 +194,13 @@ async function parseStoreysAndSpacesEntities() {
     for (let i = 0; i < storeysEntities.length; i++) {
         storeyRTID2index[storeysEntities[i].rtid] = i;
     }
-}
 
-async function buildHtmlLayout() {
-    const storeysUl = document.getElementsByClassName("storeys")[0];
-
-    for (const storey of storeysEntities) {
-        const storeyLi = document.createElement("li");
-
-        storeyLi.id = storeyRTID2index[storey.rtid];
-
-        // Visible by default
-        // storeyLi.className = "active";
-
-        const storeyHeader = document.createElement("div");
-        storeyHeader.className = "summary";
-
-        // Contains chevron and storey name
-        const togglerDiv = document.createElement("div");
-        togglerDiv.className = "toggle-active";
-        togglerDiv.addEventListener("click", (event) => changeVisibility(event));
-
-        const chevronDiv = document.createElement("div");
-        chevronDiv.className = "chevron";
-
-        const storeyName = document.createElement("h3");
-        const name = storey.components.debug_name.value.replace("(IfcBuildingStorey)", "<small>$&</small>");
-        storeyName.innerHTML = name;
-
-        const visibilityIcon = document.createElement("div");
-        visibilityIcon.className = "visibility-icon";
-        visibilityIcon.addEventListener("click", (event) => updateStoreyVisibility(event));
-
-        togglerDiv.appendChild(chevronDiv);
-        togglerDiv.appendChild(storeyName);
-        storeyHeader.appendChild(togglerDiv);
-        storeyHeader.appendChild(visibilityIcon);
-        storeyLi.appendChild(storeyHeader);
-        storeysUl.appendChild(storeyLi);
-
-        const spacesDiv = document.createElement("div");
-        const spacesUl = document.createElement("ul");
-        spacesUl.className = "spaces";
-
-        const spacesEntity = storey2Spaces[storey.components.debug_name.value];
-
-        if (spacesEntity) {
-            const spacesEntities = await spacesEntity.getChildren();
-
-            for (const spaceEntity of spacesEntities) {
-                const spaceLi = document.createElement("li");
-                spaceLi.id = spaceRTID2index[spaceEntity.rtid];
-                spaceLi.addEventListener("click", (event) => toRoom(event));
-
-                const spaceName = spaceEntity.components.debug_name.value.replace("(IfcSpace)", "<small>$&</small>");
-                spaceLi.innerHTML = spaceName;
-                spacesUl.appendChild(spaceLi);
-            }
-        } else {
-            const spaceLi = document.createElement("li");
-            spaceLi.innerHTML = "No IfcSpace at this storey";
-            spaceLi.classList = "empty-storey";
-            spacesUl.appendChild(spaceLi);
-        }
-
-        spacesDiv.appendChild(spacesUl);
-        storeyLi.appendChild(spacesDiv);
-    }
+    return { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index };
 }
 
 function getIfcTypeOnClickOnCanvas() {
     const canvas = document.getElementById("display-canvas");
     canvas.addEventListener("click", (event) => onClick(event));
-}
-
-async function startSession() {
-    const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
-        userToken: publicToken,
-        sceneUUID: sceneUUID,
-        joinExisting: true,
-    });
-
-    await SDK3DVerse.start({
-        sessionConnectionInfo,
-        canvas: document.getElementById("display-canvas"),
-        viewportProperties: {
-            defaultControllerType: SDK3DVerse.controller_type.orbit,
-        },
-        maxDimension: 1920,
-    });
 }
 
 const onClick = async (event) => {
@@ -195,7 +229,7 @@ function applyTransformation(globalMatrix, point) {
     return transformedPoint;
 }
 
-function changeVisibility(event) {
+function changeVisibility(event, storeysEntities) {
     if (event.currentTarget.parentNode.parentNode.className == "active") {
         event.currentTarget.parentNode.parentNode.className = "";
     } else {
@@ -204,12 +238,12 @@ function changeVisibility(event) {
     }
 }
 
-function toRoom(event) {
+function toRoom(event, allSpaces, initialCameraPosition, basePoint) {
     const spaceUUID = allSpaces[event.currentTarget.id].components.euid.value;
     goToRoom(spaceUUID);
 }
 
-function updateStoreyVisibility(event) {
+function updateStoreyVisibility(event, storeysEntities) {
     if (event.currentTarget.parentNode.parentNode.classList.contains("hidden")) {
         event.currentTarget.parentNode.parentNode.classList.remove("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(true);
@@ -219,12 +253,12 @@ function updateStoreyVisibility(event) {
     }
 }
 
-function resetInitialView() {
+function resetInitialView(initialCameraPosition, basePoint) {
     const activeViewPort = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0];
 
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     const fromPosition = cameraPose.position;
-    
+
     const departurePosition = new THREE.Vector3(fromPosition[0], fromPosition[1], fromPosition[2]);
     const distance = computeDistance(departurePosition, initialCameraPosition);
 
@@ -241,9 +275,9 @@ function resetInitialView() {
     });
 }
 
-function setupResetButton() {
+function setupResetButton(initialCameraPosition, basePoint) {
     const button = document.getElementsByClassName("reset-button")[0];
-    button.addEventListener("click", resetInitialView);
+    button.addEventListener("click", () => resetInitialView(initialCameraPosition, basePoint));
     return button;
 }
 
@@ -265,7 +299,7 @@ async function goToRoom(roomUUID) {
 
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     const fromPosition = cameraPose.position;
-    
+
     const aabbCenter = getBoundingBoxCenter(localAABB["min"], localAABB["max"]);
 
     const aabbCenterGlobal = applyTransformation(spaceEntity.getGlobalMatrix(), aabbCenter);
