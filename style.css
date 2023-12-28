@@ -144,6 +144,20 @@ ul {
     }
   }
 
+  & .isolation-icon {
+    background: url('layers-icon.svg') no-repeat center;
+    width: 16px;
+    height: 16px;
+    padding: .75rem;
+    transition: opacity .2s;
+    opacity: .7;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
   &.hidden {
 
     h3 {
@@ -152,6 +166,26 @@ ul {
 
     & .visibility-icon {
       background: url('https://icongr.am/fontawesome/eye-slash.svg?size=16&color=#fff') no-repeat center;
+      opacity: .3;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    & .isolation-icon {
+      background: url('https://icongr.am/fontawesome/eye-slash.svg?size=16&color=#fff') no-repeat center;
+      opacity: .3;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  &.isolated {
+    & .isolation-icon {
+      background-color: rgb(20, 225, 44);
       opacity: .3;
 
       &:hover {

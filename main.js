@@ -45,7 +45,7 @@ async function initSceneData() {
     // Parse the IFC data to get access to The IfcBuildingStorey entities, the
     // IfcSpace entities, and relate the IfcSpace entities to the IfcBuildingStorey
     // entities.
-    const { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index } =
+    const { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index, storeysVisibility } =
         await parseStoreysAndSpacesEntities();
     return {
         initialCameraPosition,
@@ -55,6 +55,7 @@ async function initSceneData() {
         storey2Spaces,
         allSpaces,
         spaceRTID2index,
+        storeysVisibility,
     };
 }
 
@@ -67,8 +68,9 @@ async function setupHtmlLayout(data) {
         storey2Spaces,
         allSpaces,
         spaceRTID2index,
+        storeysVisibility,
     } = data;
-    
+
     // Get the HTML element which contains the storeys.
     const storeysUl = document.getElementsByClassName("storeys")[0];
     // Iterate over the IfcBuildingStorey entities.
@@ -99,12 +101,19 @@ async function setupHtmlLayout(data) {
         // entity.
         const visibilityIcon = document.createElement("div");
         visibilityIcon.className = "visibility-icon";
-        visibilityIcon.addEventListener("click", (event) => updateStoreyVisibility(event, storeysEntities));
+        visibilityIcon.addEventListener("click", (event) =>
+            updateStoreyVisibility(event, storeysEntities, storeysVisibility),
+        );
+
+        const isolationIcon = document.createElement("div");
+        isolationIcon.className = "isolation-icon";
+        isolationIcon.addEventListener("click", (event) => isolateStorey(event, storeysEntities, storeysVisibility));
 
         togglerDiv.appendChild(chevronDiv);
         togglerDiv.appendChild(storeyName);
         storeyHeader.appendChild(togglerDiv);
         storeyHeader.appendChild(visibilityIcon);
+        storeyHeader.appendChild(isolationIcon);
         storeyLi.appendChild(storeyHeader);
         storeysUl.appendChild(storeyLi);
         // The following HTML elements enable to display the IfcSpace entities belonging to
@@ -168,7 +177,7 @@ async function setupOrbitPoint() {
     // IFC entities in the scene graph in accordance with the IFC spatial
     // structure specification.
     const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
-    
+
     const localAABB = projectEntity.components.local_aabb;
     // Compute the aabb center of the IfcProject entities from its local
     // boundaries.
@@ -199,6 +208,8 @@ async function parseStoreysAndSpacesEntities() {
     let allSpaces = [];
     // This object has the same purpose as storeyRTID2index but for IfcSpace entities.
     let spaceRTID2index = {};
+
+    let storeysVisibility = [];
 
     // Get the IfcBuildingStorey container entity. As from the layout of the scene graph
     // built in the IFC conversion, this entity contains all the IfcBuildingStorey instances.
@@ -239,9 +250,10 @@ async function parseStoreysAndSpacesEntities() {
     // Populate the storeyRTID2index object.
     for (let i = 0; i < storeysEntities.length; i++) {
         storeyRTID2index[storeysEntities[i].rtid] = i;
+        storeysVisibility[i] = true;
     }
 
-    return { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index };
+    return { storeysEntities, storeyRTID2index, storey2Spaces, allSpaces, spaceRTID2index, storeysVisibility };
 }
 
 function getIfcTypeOnClickOnCanvas() {
@@ -273,7 +285,7 @@ function applyTransformation(globalMatrix, point) {
     const transformationMatrix = new THREE.Matrix4();
     // Populate the matrix.
     transformationMatrix.fromArray(globalMatrix);
-    
+
     const toBeTransformed = new THREE.Vector3(...point);
     // Apply the transformation to the 3D point.
     let transformedPoint = toBeTransformed.applyMatrix4(transformationMatrix);
@@ -297,17 +309,56 @@ function toRoom(event, allSpaces, initialCameraPosition, basePoint) {
     goToRoom(spaceUUID);
 }
 
-function updateStoreyVisibility(event, storeysEntities) {
+function updateStoreyVisibility(event, storeysEntities, storeysVisibility) {
     // Show or hide the entities part of the storey depending on its current state.
-
     if (event.currentTarget.parentNode.parentNode.classList.contains("hidden")) {
         // Show entities belonging to the IfcBuildingStorey entity.
         event.currentTarget.parentNode.parentNode.classList.remove("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(true);
+        storeysVisibility[event.currentTarget.parentNode.parentNode.id] = true;
     } else {
         // Hide entities belonging to the IfcBuildingStorey entity.
         event.currentTarget.parentNode.parentNode.classList.add("hidden");
         storeysEntities[event.currentTarget.parentNode.parentNode.id].setVisibility(false);
+        storeysVisibility[event.currentTarget.parentNode.parentNode.id] = false;
+    }
+}
+
+function updateVisibility() {
+    for (let i = 0; i < storeysVisibility.length; i++) {
+        if (storeysVisibility[i]) {
+            storeysEntities[i].setVisibility(true);
+        } else {
+            storeysEntities[i].setVisibility(false);
+        }
+    }
+}
+
+function isolateStorey(event, storeysEntities, storeysVisibility) {
+    const isIsolated = event.currentTarget.parentNode.parentNode.classList.contains("isolated");
+    if (isIsolated) {
+        // Un-isolate
+        event.currentTarget.parentNode.parentNode.classList.remove("isolated");
+        for (let i = 0; i < storeysEntities.length; i++) {
+            storeysEntities[i].setVisibility(storeysVisibility[i]);
+        }
+
+        updateVisibility();
+    } else {
+        const isolatedElements = document.getElementsByClassName("isolated");
+        //Only one storey can be isolated
+        for (let i = 0; i < isolatedElements.length; i++) {
+            isolatedElements[i].classList.remove("isolated");
+        }
+
+        event.currentTarget.parentNode.parentNode.classList.add("isolated");
+        for (let i = 0; i < storeysEntities.length; i++) {
+            if (parseInt(event.currentTarget.parentNode.parentNode.id) == i) {
+                storeysEntities[i].setVisibility(true);
+            } else {
+                storeysEntities[i].setVisibility(false);
+            }
+        }
     }
 }
 
@@ -358,10 +409,10 @@ function getBoundingBoxCenter(min, max) {
 async function goToRoom(roomUUID) {
     // Retrieve the IfcSpace entity to travel to from the scene graph.
     const spaceEntity = (await SDK3DVerse.engineAPI.findEntitiesByEUID(roomUUID))[0];
-    
+
     const localAABB = spaceEntity.components.local_aabb;
     const activeViewPort = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0];
-    
+
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     // Get the current camera global position.
     const fromPosition = cameraPose.position;
