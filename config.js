@@ -1,2 +1,2 @@
-export const publicToken = %YOUR_PUBLIC_TOKEN%;
-export const sceneUUID = %YOUR_MAIN_SCENE_UUID%;
+export const publicToken = 'public_TAsi3cbzLwZnrHRe';
+export const sceneUUID = 'ea914412-f6fa-428c-9dcc-93200808aff4';
