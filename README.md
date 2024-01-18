@@ -10,6 +10,13 @@
 
 Simple IFC viewer with visibility control on IfcBuildingStorey entities. A click on an IfcSpace entity belonging to an IfcBuildingStorey in the side-panel allows to travel the camera into this IfcSpace to get a 360 view.
 
+### Controls
+
+|             | Mouse/Keyboard |
+| ----------- | -------------- |
+| Move around | WASD           |
+| Look around | RMB            |
+
 # How does it work?
 
 Every client that runs this application will either start a new session of the scene or join an ongoing session if there is one running already.
