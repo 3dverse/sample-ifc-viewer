@@ -24,11 +24,26 @@
             </aside>
 
             <!-- CANVAS -->
-            <canvas id="display-canvas" class="display-canvas" oncontextmenu="event.preventDefault()"></canvas>
+            <canvas
+                id="display-canvas"
+                oncontextmenu="event.preventDefault()"
+                style="width: 100vw; height: 100vh"
+                tabindex="1"
+            ></canvas>
         </div>
 
-        <!-- RESET -->
-        <button class="reset-button">Reset</button>
+        <div class="settings-box" oncontextmenu="event.preventDefault()">
+            <div class="camera-settings" style="visibility: hidden">
+                <h4>FPS navigation</h4>
+            </div>
+            <!-- RESET -->
+            <button class="reset-button">Reset</button>
+            <!-- CAMERA SETTINGS -->
+            <div class="camera-settings">
+                <h4>FPS navigation</h4>
+                <div id="fps-toggling" class="untoggled"></div>
+            </div>
+        </div>
 
         <!-- THREEJS -->
         <script type="importmap">
