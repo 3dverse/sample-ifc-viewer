@@ -57,13 +57,3 @@ python -m http.server
 ```
 
 Now open your web browser at the url indicated by your server (http://localhost:XXXX) to run your application.
-
-## What's next
-
-### Filter/Highlight by IFC entity type
-
-todo
-
-### Setup a First Person Character Controller to explore the IFC
-
-todo
