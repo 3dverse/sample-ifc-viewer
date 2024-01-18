@@ -68,7 +68,7 @@ async function setupHtmlLayout(data) {
         allSpaces,
         spaceRTID2index,
     } = data;
-    
+
     // Get the HTML element which contains the storeys.
     const storeysUl = document.getElementsByClassName("storeys")[0];
     // Iterate over the IfcBuildingStorey entities.
@@ -147,6 +147,8 @@ async function setupHtmlLayout(data) {
     // Creation of a reset button which will travel back to the original
     // position and orbit target computed in setupOrbitPoint when being clicked on.
     setupResetButton(initialCameraPosition, basePoint);
+    // The editor controller type enables an FPS like navigation mode.
+    document.getElementById("fps-toggling").addEventListener("click", (e) => updateCamera(e));
 }
 
 function setupCanvasEvents() {
@@ -168,7 +170,7 @@ async function setupOrbitPoint() {
     // IFC entities in the scene graph in accordance with the IFC spatial
     // structure specification.
     const projectEntity = (await SDK3DVerse.engineAPI.findEntitiesByNames("IfcProject"))[0];
-    
+
     const localAABB = projectEntity.components.local_aabb;
     // Compute the aabb center of the IfcProject entities from its local
     // boundaries.
@@ -259,6 +261,21 @@ const displayIfcType = async (event) => {
     console.log(entity.getParent().getParent().components.debug_name.value);
 };
 
+function updateCamera(event) {
+    const viewport = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0];
+    if (event.currentTarget.classList.contains("untoggled")) {
+        // Toggle to set the controller type to editor (untoggled by default).
+        event.currentTarget.classList.remove("untoggled");
+        event.currentTarget.classList.add("toggled");
+        SDK3DVerse.engineAPI.cameraAPI.setControllerType(viewport.getId(), SDK3DVerse.cameraControllerType.editor);
+    } else {
+        // Untoggle to set the controller type back to orbit.
+        event.currentTarget.classList.remove("toggled");
+        event.currentTarget.classList.add("untoggled");
+        SDK3DVerse.engineAPI.cameraAPI.setControllerType(viewport.getId(), SDK3DVerse.cameraControllerType.orbit);
+    }
+}
+
 // Compute the distance between two 3D points.
 function computeDistance(u, v) {
     var dx = u.x - v.x;
@@ -273,7 +290,7 @@ function applyTransformation(globalMatrix, point) {
     const transformationMatrix = new THREE.Matrix4();
     // Populate the matrix.
     transformationMatrix.fromArray(globalMatrix);
-    
+
     const toBeTransformed = new THREE.Vector3(...point);
     // Apply the transformation to the 3D point.
     let transformedPoint = toBeTransformed.applyMatrix4(transformationMatrix);
@@ -358,10 +375,10 @@ function getBoundingBoxCenter(min, max) {
 async function goToRoom(roomUUID) {
     // Retrieve the IfcSpace entity to travel to from the scene graph.
     const spaceEntity = (await SDK3DVerse.engineAPI.findEntitiesByEUID(roomUUID))[0];
-    
+
     const localAABB = spaceEntity.components.local_aabb;
     const activeViewPort = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0];
-    
+
     const cameraPose = SDK3DVerse.engineAPI.cameraAPI.getActiveViewports()[0].getCamera().getGlobalTransform();
     // Get the current camera global position.
     const fromPosition = cameraPose.position;
