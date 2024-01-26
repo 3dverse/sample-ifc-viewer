@@ -1,4 +1,4 @@
-import { publicToken, sceneUUID } from "./config.js";
+import { publicToken, mainSceneUUID } from "./config.js";
 import * as THREE from "three";
 
 // Time (s) to get to a new point with the travel function.
@@ -24,7 +24,7 @@ async function InitApp() {
 async function startSession() {
     const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
         userToken: publicToken,
-        sceneUUID: sceneUUID,
+        sceneUUID: mainSceneUUID,
         joinExisting: true,
     });
 
