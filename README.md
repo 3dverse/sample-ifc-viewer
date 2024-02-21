@@ -4,7 +4,7 @@
 
 ## Try it out
 
-[Try it out](https://3dverse.github.io/sample-ifc-viewer/)
+[Try it out](https://console.3dverse.com/-/sample/sample-ifc-viewer/)
 
 ## Description
 

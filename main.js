@@ -1,4 +1,4 @@
-import { publicToken, sceneUUID } from "./config.js";
+import { publicToken, mainSceneUUID } from "./config.js";
 import * as THREE from "three";
 
 // Time (s) to get to a new point with the travel function.
@@ -22,14 +22,9 @@ async function InitApp() {
 }
 
 async function startSession() {
-    const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
+    await SDK3DVerse.joinOrStartSession({
         userToken: publicToken,
-        sceneUUID: sceneUUID,
-        joinExisting: true,
-    });
-
-    await SDK3DVerse.start({
-        sessionConnectionInfo,
+        sceneUUID: mainSceneUUID,
         canvas: document.getElementById("display-canvas"),
         viewportProperties: {
             defaultControllerType: SDK3DVerse.controller_type.orbit,
