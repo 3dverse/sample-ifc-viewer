@@ -22,14 +22,9 @@ async function InitApp() {
 }
 
 async function startSession() {
-    const sessionConnectionInfo = await SDK3DVerse.getSessionConnectionInfo({
+    await SDK3DVerse.joinOrStartSession({
         userToken: publicToken,
         sceneUUID: mainSceneUUID,
-        joinExisting: true,
-    });
-
-    await SDK3DVerse.start({
-        sessionConnectionInfo,
         canvas: document.getElementById("display-canvas"),
         viewportProperties: {
             defaultControllerType: SDK3DVerse.controller_type.orbit,
